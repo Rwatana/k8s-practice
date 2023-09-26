@@ -18,7 +18,7 @@ spec:
       source:
         repoURL: https://github.com/Rwatana/k8s-practice.git
         targetRevision: HEAD
-        path: guestbook
+        path: app
       destination:
         server: '{{url}}'
         namespace: default
