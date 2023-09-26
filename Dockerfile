@@ -6,5 +6,5 @@ RUN go build -o /gitops-go-app ./main.go
 # Satge-2
 FROM ubuntu
 EXPOSE 8080
-COPY --from=builder ./ .
+COPY --from=builder /gitops-go-app /usr/local/bin/
 ENTRYPOINT ["./gitops-go-app"]
