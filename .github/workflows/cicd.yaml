@@ -1,0 +1,46 @@
+name: Build and Push Docker Images to Minikube
+
+on:
+  push:
+    branches: ['*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Start Minikube
+        run: |
+          minikube start
+          eval $(minikube docker-env)
+
+      - name: Build and tag Docker images
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -t app-repo:$IMAGE_TAG -f ./Dockerfile.prod .
+
+
+      - name: Load Docker image into Minikube
+        run: |
+          eval $(minikube docker-env)
+          docker save app-repo:$IMAGE_TAG | docker load
+
+
+      - name: Update image tag in Kubernetes configuration
+        id: update-image-tag
+        run: |
+          yq e -i '.front.imageTag = env(IMAGE_TAG)' ./config/app.yaml
+          git diff --name-only --exit-code || echo "No changes to commit."
+
+      - name: Commit and push
+        if: steps.update-image-tag.outcome != 'success'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update image tag to $IMAGE_TAG"
+          git push
