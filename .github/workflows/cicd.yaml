@@ -21,9 +21,9 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          docker build -t app-repo:$IMAGE_TAG -f ./build/app/Dockerfile.prod .
-          docker build -t web-repo:$IMAGE_TAG -f ./build/web/Dockerfile .
-          docker build -t migration-repo:$IMAGE_TAG -f ./build/migration/Dockerfile .
+          docker build -t app-repo:$IMAGE_TAG -f ./Dockerfile.prod .
+          docker build -t web-repo:$IMAGE_TAG -f ./Dockerfile .
+          docker build -t migration-repo:$IMAGE_TAG -f ./Dockerfile .
 
       - name: Load Docker images into Minikube
         run: |
