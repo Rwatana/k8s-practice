@@ -2,7 +2,7 @@ name: Build and Push Docker Images to ECR Repositories
 
 on:
   push:
-    branches: [ main ]
+    branches: ['*']
 
 jobs:
   build:
@@ -41,21 +41,21 @@ jobs:
       - name: Checkout config repository
         uses: actions/checkout@v3
         with:
-          repository: your_account/your_repository
-	  ref: branch_name
+          repository: Rwatana/k8s-practice
+	  ref: 
 	  token: ${{ secrets.PAT }}
-          path: your_repository
+          path: ['*']
 
       - name: Update image tag
         id: update-image-tag
-        working-directory: your_repository
+        working-directory: k8s-practice
         continue-on-error: true
         run: |
           yq -i '.front.imageTag = "'`printenv IMAGE_TAG`'"' ./main/values.yaml
           git diff --name-only --exit-code
 
       - name: Commit and push
-        working-directory: your_repository
+        working-directory: k8s-practice
         if: steps.update-image-tag.outcome == 'failure'
         run: |
           git config user.name github-actions[bot]
