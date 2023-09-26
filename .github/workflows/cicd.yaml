@@ -7,19 +7,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v2
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: ap-northeast-1
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT }}:role/role-github
-          role-duration-seconds: 1800
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -34,32 +31,32 @@ jobs:
           docker build -t $ECR_REGISTRY/app-repo:$IMAGE_TAG -f ./build/app/Dockerfile.prod .
           docker build -t $ECR_REGISTRY/web-repo:$IMAGE_TAG -f ./build/web/Dockerfile .
           docker build -t $ECR_REGISTRY/migration-repo:$IMAGE_TAG -f ./build/migration/Dockerfile .
-          docker push $ECR_REGISTRY/web-repo:$IMAGE_TAG
           docker push $ECR_REGISTRY/app-repo:$IMAGE_TAG
+          docker push $ECR_REGISTRY/web-repo:$IMAGE_TAG
           docker push $ECR_REGISTRY/migration-repo:$IMAGE_TAG
-      
+
       - name: Checkout config repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           repository: Rwatana/k8s-practice
-	  ref: 
-	  token: ${{ secrets.PAT }}
-          path: ['*']
+          ref: ${{ github.ref }}
+          token: ${{ secrets.PAT }}
+          path: 'k8s-practice'  # Ensure this is the correct path to your Kubernetes configuration repository
 
       - name: Update image tag
         id: update-image-tag
-        working-directory: k8s-practice
+        working-directory: ./k8s-practice
         continue-on-error: true
         run: |
-          yq -i '.front.imageTag = "'`printenv IMAGE_TAG`'"' ./main/values.yaml
-          git diff --name-only --exit-code
+          yq e -i '.front.imageTag = env(IMAGE_TAG)' ./main/values.yaml
+          git diff --name-only --exit-code || echo "No changes to commit."
 
       - name: Commit and push
-        working-directory: k8s-practice
-        if: steps.update-image-tag.outcome == 'failure'
+        if: steps.update-image-tag.outcome != 'success'
+        working-directory: ./k8s-practice
         run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git add .
-          git commit --author=. -m "Update image tag to "`printenv IMAGE_TAG`
+          git commit -m "Update image tag to $IMAGE_TAG"
           git push
