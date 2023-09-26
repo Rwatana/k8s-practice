@@ -21,15 +21,14 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          # docker build -t app-repo:$IMAGE_TAG -f ./Dockerfile.prod .
-          docker build -t web-repo:$IMAGE_TAG -f ./Dockerfile .
-          docker build -t migration-repo:$IMAGE_TAG -f ./Dockerfile .
+          docker build -t app-repo:$IMAGE_TAG -f ./build/app/Dockerfile.prod .
 
-      - name: Load Docker images into Minikube
+
+      - name: Load Docker image into Minikube
         run: |
-          docker save app-repo:$IMAGE_TAG | (eval $(minikube docker-env) && docker load)
-          docker save web-repo:$IMAGE_TAG | (eval $(minikube docker-env) && docker load)
-          docker save migration-repo:$IMAGE_TAG | (eval $(minikube docker-env) && docker load)
+          eval $(minikube docker-env)
+          docker save app-repo:$IMAGE_TAG | docker load
+
 
       - name: Update image tag in Kubernetes configuration
         id: update-image-tag
